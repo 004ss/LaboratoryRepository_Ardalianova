@@ -2,11 +2,14 @@
 #include <iomanip>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
+#include <sstream>
+#include <string>
 using namespace std;
 
 double a, b, h;
 int n;
-bool dataReady = false;  
+bool dataReady = false;
 
 void clearScreen()
 {
@@ -26,16 +29,26 @@ void waitEnter()
 
 double inputNumber(string text)
 {
+    string s;
     double value;
+    char extra;
     cout << text;
-    while (!(cin >> value))          
+    while (true)
     {
-        cin.clear();               
-        cin.ignore(1000, '\n');      
-        cout << "  [!] Error: enter a number: ";
+        if (!getline(cin, s)) exit(0);        // read the whole line (exit if input is closed)
+
+        for (int i = 0; i < (int)s.length(); i++)  // 1,5 -> 1.5
+        {
+            if (s[i] == ',') s[i] = '.';
+        }
+
+        stringstream ss(s);
+        if (ss >> value && !(ss >> extra))    // a number and nothing else after it
+        {
+            return value;
+        }
+        cout << "  [!] Error: enter a number (for example 2 or 1.5): ";
     }
-    cin.ignore(1000, '\n');          
-    return value;
 }
 
 double calculate(double x)
@@ -145,19 +158,29 @@ void showResults()
         return;
     }
 
+    ofstream file("results.txt");   // create (or rewrite) the file
+
     cout << "a = " << a << ", b = " << b << ", h = " << h << ", n = " << n << "\n";
+    file << "a = " << a << ", b = " << b << ", h = " << h << ", n = " << n << "\n";
     line();
     cout << setw(5) << "#" << setw(14) << "x" << setw(22) << "y" << "\n";
+    file << setw(5) << "#" << setw(14) << "x" << setw(22) << "y" << "\n";
     line();
 
-    int k = 1;   
+    int k = 1;
     for (double x = a; x <= b + 0.000001; x = x + h)
     {
+        double y = calculate(x);
         cout << setw(5) << k << setw(14) << fixed << setprecision(3) << x
-            << setw(22) << setprecision(4) << calculate(x) << "\n";
+            << setw(22) << setprecision(4) << y << "\n";
+        file << setw(5) << k << setw(14) << fixed << setprecision(3) << x
+            << setw(22) << setprecision(4) << y << "\n";
         k++;
     }
+    file.close();
+
     line();
+    cout << "Results are saved to the file results.txt\n";
     waitEnter();
 }
 
@@ -171,6 +194,8 @@ void showFormula()
     cout << "y = sum(i=0..n) prod(j=1..n-1) (i+j)/(2(1+x)^2),      x >= 0\n\n";
     cout << "Constraints: a < b, step h > 0, n is an integer, n >= 2.\n";
     cout << "The program calculates y for x = a, a+h, a+2h, ... while x <= b.\n";
+    cout << "Decimal numbers can be typed with a dot or a comma (1.5 or 1,5).\n";
+    cout << "The results are also saved to the file results.txt.\n";
     waitEnter();
 }
 
@@ -190,7 +215,7 @@ int main()
         cout << "Select option: ";
 
         cin >> choice;
-        if (cin.fail())             
+        if (cin.fail())
         {
             cin.clear();
             choice = -1;
